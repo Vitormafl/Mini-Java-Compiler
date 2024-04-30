@@ -1,0 +1,356 @@
+
+PARSER_BEGIN(Parser)
+
+import syntaxtree.*;
+import syntaxtree.visitor.*;
+import syntaxtree.*;
+import syntaxtree.visitor.*;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Parser {
+    public static void main (String args[]) {
+        Parser parser;
+
+        if (args.length == 0){
+            System.out.println("Reading the Input...");
+            parser = new Parser(System.in);
+        }
+        else if (args.length == 1){
+            try{
+                System.out.println("Reading the Archive Input...");
+                parser = new Parser(new java.io.FileInputStream(args[0]));
+            }
+            catch(java.io.FileNotFoundException e) {
+                System.out.println("Archive not found.");
+                return;
+            }
+        }
+        else{
+            System.out.println("Out of Pattern!");
+            return;
+        }
+        try{
+            Program prog = parser.Program();
+
+            DepthFirstVisitor table_visitor = new DepthFirstVisitor();
+            prog.accept(table_visitor);
+
+            TypeDepthFirstVisitor type_check = new TypeDepthFirstVisitor(table_visitor);
+            prog.accept(type_check);
+        }
+        catch(Exception e){
+            System.out.println("Unsuccessful Reading. Showing Error Message:");
+            System.out.println(e.getMessage());
+        }
+    }
+    private static void fullAnalysis(ArrayList<String> filenames) throws Exception {
+        Parser parser = new Parser(new StringReader(""));
+        for (String nome : filenames) {
+            try {
+                String file = readFile(nome);
+                parser.ReInit(new StringReader(file));
+
+                System.out.println("\nLENDO " + nome + "\n");
+
+                List<Token> tokens = LexicalAnalyzer(parser, file);
+                String resultadoAnaliseSintatica = SyntaxAnalyzer(parser, file);
+                if (resultadoAnaliseSintatica.equals("")) {
+                    System.out.println("\nSINTAXE OK\n");
+                } else {
+                    System.out.println("\nSINTAXE FALHA: " + resultadoAnaliseSintatica + "\n");
+                }
+                parser.ReInit(new StringReader(file));
+            } catch (Exception e) {
+                System.out.println("erro: " + e.getCause());
+            }
+        }
+    }
+
+    private static ArrayList<Token> LexicalAnalyzer(Parser parser, String input) throws TokenMgrError {
+        parser.ReInit(new StringReader(input));
+        ArrayList<Token> tokens = new ArrayList<Token>();
+
+        // analise lexica
+        try {
+            while (true) {
+                Token token = parser.getNextToken();
+                if (token.kind == 0) {
+                    break;
+                }
+                tokens.add(token);
+                // exibir token atual
+                System.out.println("Token atual: " + token.image);
+            }
+        } catch (TokenMgrError e) {
+            // informações do token quando ocorrer um erro léxico
+            System.out.println("Erro lexico: " + e.getMessage());
+            System.out.println("Tokens correspondidos:");
+            for (Token token : tokens) {
+                System.out.println("Linha " + token.beginLine + ", Coluna " + token.beginColumn +
+                        ": Imagem: \"" + token.image + "\", Kind: " + token.kind);
+            }
+        }
+
+        return tokens;
+    }
+
+    private static String SyntaxAnalyzer(Parser parser, String input) {
+        String res = "";
+        try {
+            parser.ReInit(new StringReader(input));
+            parser.Program();
+            return res;
+        } catch (Throwable e) {
+            return e.getMessage();
+        }
+    }
+
+    private static String readFile(String filePath) throws Exception {
+        File file = new File(filePath);
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        String line;
+        StringBuilder stringBuilder = new StringBuilder();
+        while ((line = reader.readLine()) != null) {
+            stringBuilder.append(line);
+            stringBuilder.append(System.lineSeparator());
+        }
+        reader.close();
+        return stringBuilder.toString();
+    }
+}
+PARSER_END(Parser)
+
+// Tokens Declaration - Lexical Parser
+
+TOKEN : {
+       // Basic Definitions: Letters and Digits
+        <#LETTER: (["a" - "z", "A" - "Z"])>
+       |<#DIGIT: (["0" - "9"])>
+
+       // Special Chars, commas, colons, brackets, etc.
+       |<SCOLON: (";")>
+       |<COMMA: (",")>
+       |<DOT: (".")>
+       |<LPAR: ("(")>
+       |<RPAR: (")")>
+       |<LBRACKET: ("[")>
+       |<RBRACKET: ("]")>
+       |<LBRACE: ("{")>
+       |<RBRACE: ("}")>
+
+       // Key Words
+
+       |<IF: ("if")>
+       |<ELSE: ("else")>
+       |<WHILE: ("while")>
+       |<NEW: ("new")>
+       |<LENGTH: ("length")>
+       |<PRINT: ("System.out.println")>
+       |<PUBLIC: ("public")>
+       |<STATIC: ("static")>
+       |<VOID: ("void")>
+       |<MAIN: ("main")>
+       |<THIS: ("this")>       
+       |<CLASS: ("class")>
+       |<EXTENDS: ("extends")>
+       |<RETURN: ("return")>
+       // maybe has others
+
+       // Boolean States
+       |<TRUE: ("true")>
+       |<FALSE: ("false")>
+
+       // Operators
+       |<PLUS: ("+")>
+       |<MINUS: ("-")>
+       |<MULT: ("*")>
+       |<LAND: ("&&")>
+       |<LOR: ("||")>
+       |<LNOT: ("!")>
+       |<SMALLER: ("<")>
+       |<GREATER: (">")>
+       |<EQUAL: ("=")>
+
+       // Type Names
+       |<INT: ("int")>
+       |<BOOLEAN: ("boolean")>
+       |<STRING: ("String")>
+       // maybe add others operators as == and others
+
+       // Num: Sequence of 1 or more Digits
+       |<NUM: (<DIGIT>)+>
+
+       // Variables, classes, objects, etc identifications
+       // examples: a, ab, b1, z_
+       |<ID: <LETTER> (<LETTER> | <DIGIT> | "_")*>
+}
+
+SKIP :
+{ " "
+| "\t"
+| "\r"
+| "\n"
+| < "//" (~["\n","\r"])* ("\n" | "\r\n" | "\r") >
+| < "/*" (~[])* "*/" >}
+
+// FEITO
+Program Program() :
+{
+    MainClass mc;
+    ClassDecl cd;
+    ClassDeclList cl = new ClassDeclList();
+}
+{
+    mc = MainClass()
+    (cd = ClassDeclaration() {cl.addElement(cd);})*
+    <EOF>
+
+    {return new Program(mc, cl);}
+}
+
+// FEITO
+MainClass MainClass() :
+{
+    Identifier ci, ma;
+    Statement s;
+}
+{
+    <CLASS> ci = ID() "{"
+        <PUBLIC> <STATIC> <VOID> <MAIN> "(" <STRING> "[" "]" ma = ID() ")" "{"
+            s = Statement()
+        "}"
+    "}"
+
+    {return new MainClass(ci, ma, s);}
+}
+
+// FEITO
+ClassDecl ClassDeclaration() :
+{
+    Identifier id1, id2 = null;
+    VarDecl vd; VarDeclList vl = new VarDeclList();
+    MethodDecl md; MethodDeclList ml = new MethodDeclList();
+}
+{
+    <CLASS> id1 = ID()
+    (<EXTENDS> id2 = ID())? "{"
+        (vd = VarDeclaration() {vl.addElement(vd);})* (md = MethodDeclaration() {ml.addElement(md);})*
+    "}"
+
+    {return (id2 == null) ? new ClassDeclSimple(id1, vl, ml) : new ClassDeclExtends(id1, id2, vl, ml);}
+}
+
+// FEITO
+VarDecl VarDeclaration() :
+{
+    Type t; Identifier i;
+}
+{
+    t = Type() i = ID() <SCOLON>
+
+    {return new VarDecl(t, i);}
+}
+
+// FEITO
+MethodDecl MethodDeclaration() :
+{
+    Type t, taux; Identifier i, iaux; Exp e; MethodDecl md; VarDecl vd; Statement st;
+
+    FormalList fl = new FormalList(); VarDeclList vl = new VarDeclList(); StatementList sl = new StatementList();
+}
+{
+    <PUBLIC> t = Type() i = ID() "("
+        (taux = Type() iaux = ID() {fl.addElement(new Formal(taux, iaux));} ( "," taux = Type() iaux = ID() {fl.addElement(new Formal(taux, iaux));})* )?
+    ")" "{"
+        (LOOKAHEAD(2) vd = VarDeclaration() {vl.addElement(vd);})*
+        (st = Statement() {sl.addElement(st);})*
+        "return" e = Expression() <SCOLON>
+    "}"
+    {return new MethodDecl(t, i, fl, vl, sl, e);}
+}
+
+// FEITO, VER SE O ID FUNCIONA
+Type Type() :
+{
+    Identifier id;
+}
+{
+    LOOKAHEAD(3)
+    <INT> "[" "]" {return new IntArrayType();}
+    | <INT> {return new IntegerType();}
+    | <BOOLEAN> {return new BooleanType();}
+    | id = ID() {return new IdentifierType(id.toString());} // ver se da certo
+}
+
+Statement Statement() :
+{
+   Statement s, s2;
+   Exp e, e2; Identifier id;
+   StatementList sl = new StatementList();
+}
+{
+    "{" (s = Statement() {sl.addElement(s);})* "}" { return new Block(sl); }
+    | <IF> "(" e = Expression() ")" s = Statement() <ELSE> s2 = Statement() { return new If(e, s, s2); }
+    | <WHILE> "(" e = Expression() ")" s = Statement() { return new While(e, s); }
+    | <PRINT> "(" e = Expression() ")" <SCOLON> { return new Print(e); }
+    | LOOKAHEAD(2) // coloquei de 6 para 2
+      id = ID() "=" e = Expression() <SCOLON> { return new Assign(id, e); }
+    | id = ID() "[" e = Expression() "]" "=" e2 = Expression() <SCOLON> { return new ArrayAssign(id, e, e2); }
+}
+
+Exp Expression() :
+{
+    Exp e1;
+}
+{
+    e1 = Expr1() (LOOKAHEAD(2) e1 = Expr2(e1))* // ((((a+b)+c)+d)+e)
+    { return e1; }
+}
+
+Exp Expr1() :
+{
+    Exp e, e2;
+    Token t;
+    Identifier id;
+}
+{
+    <THIS> { e = new This(); return e; }
+    | <TRUE> { e = new True(); return e; }
+    | <FALSE> { e = new False(); return e; }
+    | t = <NUM> { e = new IntegerLiteral(Integer.parseInt(t.image)); return e; }
+    | id = ID() { e = new IdentifierExp(id.toString()); return e; }
+    | "!" e2 = Expression() { e = new Not(e2); return e; }
+    | "(" e2 = Expression() ")" { e = e2; return e; }
+    | LOOKAHEAD(2) // lookahead aumentado em 1
+      <NEW> <INT> "[" e2 = Expression() "]" { e = new NewArray(e2); return e; }
+    | <NEW> id = ID() "(" ")" { e = new NewObject(id); return e; }
+}
+
+Exp Expr2(Exp left_exp) :
+{
+    Exp right_exp; Exp final_exp;
+    Identifier id;
+    ExpList el = new ExpList();
+}
+{
+    "&&" right_exp = Expression() { return new And(left_exp, right_exp); }
+    | "<" right_exp = Expression() { return new LessThan(left_exp, right_exp); }
+    | "+" right_exp = Expression() { return new Plus(left_exp, right_exp); }
+    | "-" right_exp = Expression() { return new Minus(left_exp, right_exp); }
+    | "*" right_exp = Expression() { return new Times(left_exp, right_exp); }
+    | "[" right_exp = Expression() "]" { return new ArrayLookup(left_exp, right_exp); }
+    | LOOKAHEAD(2) // lookahead aumentado em 1
+      "." <LENGTH> { return new ArrayLength(left_exp); }
+    | "." id = ID() "(" ( right_exp = Expression() { el.addElement(right_exp);}
+        ( "," right_exp = Expression() { el.addElement(right_exp);} )* )? ")" { return new Call(left_exp, id, el); }
+}
+
+// FEITO
+Identifier ID() : {Token t;}
+{ t = <ID> {return new Identifier(t.image);}}
