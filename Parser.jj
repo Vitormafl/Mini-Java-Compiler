@@ -13,6 +13,8 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
+// Novos métodos de análise do código, análise sintática e léxica
+
 public class Parser {
     public static void main (String args[]) {
         Parser parser;
@@ -56,18 +58,18 @@ public class Parser {
                 String file = readFile(nome);
                 parser.ReInit(new StringReader(file));
 
-                System.out.println("\nLENDO " + nome + "\n");
+                System.out.println("\nREADING " + nome + "\n");
 
                 List<Token> tokens = LexicalAnalyzer(parser, file);
                 String resultadoAnaliseSintatica = SyntaxAnalyzer(parser, file);
                 if (resultadoAnaliseSintatica.equals("")) {
-                    System.out.println("\nSINTAXE OK\n");
+                    System.out.println("\n SYNTAX OK \n");
                 } else {
-                    System.out.println("\nSINTAXE FALHA: " + resultadoAnaliseSintatica + "\n");
+                    System.out.println("\nSYNTAX ERROR: " + resultadoAnaliseSintatica + "\n");
                 }
                 parser.ReInit(new StringReader(file));
             } catch (Exception e) {
-                System.out.println("erro: " + e.getCause());
+                System.out.println("ERROR: " + e.getCause());
             }
         }
     }
@@ -75,8 +77,6 @@ public class Parser {
     private static ArrayList<Token> LexicalAnalyzer(Parser parser, String input) throws TokenMgrError {
         parser.ReInit(new StringReader(input));
         ArrayList<Token> tokens = new ArrayList<Token>();
-
-        // analise lexica
         try {
             while (true) {
                 Token token = parser.getNextToken();
@@ -84,16 +84,13 @@ public class Parser {
                     break;
                 }
                 tokens.add(token);
-                // exibir token atual
-                System.out.println("Token atual: " + token.image);
+                //System.out.println("TOKEN: " + token.image);
             }
         } catch (TokenMgrError e) {
-            // informações do token quando ocorrer um erro léxico
-            System.out.println("Erro lexico: " + e.getMessage());
-            System.out.println("Tokens correspondidos:");
-            for (Token token : tokens) {
-                System.out.println("Linha " + token.beginLine + ", Coluna " + token.beginColumn +
-                        ": Imagem: \"" + token.image + "\", Kind: " + token.kind);
+            System.out.println("LEXICAL ERROR: " + e.getMessage());
+           for (Token token : tokens) {
+                System.out.println("ROW " + token.beginLine + ", COLUMN " + token.beginColumn +
+                        ": IMAGE: \"" + token.image + "\", KIND: " + token.kind);
             }
         }
 
@@ -110,7 +107,6 @@ public class Parser {
             return e.getMessage();
         }
     }
-
     private static String readFile(String filePath) throws Exception {
         File file = new File(filePath);
         BufferedReader reader = new BufferedReader(new FileReader(file));
@@ -199,54 +195,80 @@ SKIP :
 | < "//" (~["\n","\r"])* ("\n" | "\r\n" | "\r") >
 | < "/*" (~[])* "*/" >}
 
-// FEITO
+// Expressions Declaration - Syntax Parser
+
+// The Program Method is the where you denote the outer structure of the mini java code
+// Basically the program has two parts: The Main Class and Other Classes
+// The MainClass() obsviously capture the tokens of the class with the function static main
+// and all other classes in the program are captured in OthersClasses()
+
+// NENHUMA MUDANÇA
+
 Program Program() :
 {
-    MainClass mc;
-    ClassDecl cd;
-    ClassDeclList cl = new ClassDeclList();
+    MainClass main;
+    ClassDecl decl;
+    ClassDeclList classlist = new ClassDeclList();
 }
 {
-    mc = MainClass()
-    (cd = ClassDeclaration() {cl.addElement(cd);})*
+    main = MainClass()
+    (decl = ClassDeclaration() {classlist.addElement(decl);})*
     <EOF>
 
-    {return new Program(mc, cl);}
+    {return new Program(main, classlist);}
 }
 
-// FEITO
+// REFATORADO, mudei os BRACE e BRACKETS para os símbolos para manter mais legível,
+// havia erro no mainclass antigo abria e fechava parenteses de uma vez
+
 MainClass MainClass() :
 {
-    Identifier ci, ma;
-    Statement s;
+    Identifier mcname, argname;
+    Statement code;
 }
 {
-    <CLASS> ci = ID() "{"
-        <PUBLIC> <STATIC> <VOID> <MAIN> "(" <STRING> "[" "]" ma = ID() ")" "{"
-            s = Statement()
+    <CLASS> mcname = ID() "{"
+        <PUBLIC> <STATIC> <VOID> <MAIN> "(" <STRING> "[" "]" argname = ID() ")" "{"
+            code = Statement()
         "}"
     "}"
 
-    {return new MainClass(ci, ma, s);}
+    {return new MainClass(mcname, argname, code);}
 }
 
-// FEITO
+//This method captures all classes in the code, except for the main, the format is:
+    // class <class_name>{
+    //  Attributes;
+    //  Methods;
+    // }
+// Or in the format:
+    // class <class_name> extends <superclass_name>{
+    //  Attributes;
+    //  Methods;
+    // }
+
+// REFATORADO, extends mudado para ficar menos código
 ClassDecl ClassDeclaration() :
 {
-    Identifier id1, id2 = null;
-    VarDecl vd; VarDeclList vl = new VarDeclList();
-    MethodDecl md; MethodDeclList ml = new MethodDeclList();
+    Identifier classname, superclass = null;
+    VarDecl vd; VarDeclList varlist = new VarDeclList();
+    MethodDecl md; MethodDeclList methodlist = new MethodDeclList();
 }
 {
-    <CLASS> id1 = ID()
-    (<EXTENDS> id2 = ID())? "{"
-        (vd = VarDeclaration() {vl.addElement(vd);})* (md = MethodDeclaration() {ml.addElement(md);})*
+    <CLASS> classname = ID()
+    (<EXTENDS> superclass = ID())? "{"
+        (vd = VarDeclaration() {varlist.addElement(vd);})* (md = MethodDeclaration() {methodlist.addElement(md);})*
     "}"
 
-    {return (id2 == null) ? new ClassDeclSimple(id1, vl, ml) : new ClassDeclExtends(id1, id2, vl, ml);}
+    {if (superclass == null) return new ClassDeclSimple(classname, varlist, methodlist);
+    else return new ClassDeclExtends(classname, superclass, varlist, methodlist);}
 }
 
-// FEITO
+// Attribute Definition, denoted by the format:
+//  type(int, int[], bool or object(denoted by <ID>)) <attr_name> ;
+
+// FEITO, nenhuma mudança
+
 VarDecl VarDeclaration() :
 {
     Type t; Identifier i;
@@ -257,25 +279,38 @@ VarDecl VarDeclaration() :
     {return new VarDecl(t, i);}
 }
 
-// FEITO
+//Method Definition, in format:
+//  public type <method_name>(<parameters>){
+//      Attributes;
+//      <CODE>
+//      return <Expression>;
+//  }
+
+// FEITO, mudei só o nome de algumas variáveis e reescrevi, mas no geral parece o mesmo
 MethodDecl MethodDeclaration() :
 {
-    Type t, taux; Identifier i, iaux; Exp e; MethodDecl md; VarDecl vd; Statement st;
+    Type t, others_t;
+    Identifier method_name, params_name;
+    Exp e;
+    MethodDecl md; VarDecl vd; Statement st;
 
-    FormalList fl = new FormalList(); VarDeclList vl = new VarDeclList(); StatementList sl = new StatementList();
+    FormalList formalist = new FormalList(); VarDeclList varlist = new VarDeclList(); StatementList statelist = new StatementList();
 }
 {
-    <PUBLIC> t = Type() i = ID() "("
-        (taux = Type() iaux = ID() {fl.addElement(new Formal(taux, iaux));} ( "," taux = Type() iaux = ID() {fl.addElement(new Formal(taux, iaux));})* )?
+    <PUBLIC> t = Type() method_name = ID() "("
+        (others_t = Type() params_name = ID() {formalist.addElement(new Formal(others_t, params_name));} ( "," others_t = Type() params_name = ID() {formalist.addElement(new Formal(others_t, params_name));})* )?
     ")" "{"
-        (LOOKAHEAD(2) vd = VarDeclaration() {vl.addElement(vd);})*
-        (st = Statement() {sl.addElement(st);})*
+        (LOOKAHEAD(2) vd = VarDeclaration() {varlist.addElement(vd);})*
+        (st = Statement() {statelist.addElement(st);})*
         "return" e = Expression() <SCOLON>
     "}"
-    {return new MethodDecl(t, i, fl, vl, sl, e);}
+    {return new MethodDecl(t, method_name, formalist, varlist, statelist, e);}
 }
 
-// FEITO, VER SE O ID FUNCIONA
+// Function to check type tokens, classified in 4 possibilities:
+// array of int, int, boolean and a class name
+
+// REFATORADO, mudei o LOOKAHEAD pra 3 de 2, resto igual
 Type Type() :
 {
     Identifier id;
@@ -283,10 +318,12 @@ Type Type() :
 {
     LOOKAHEAD(3)
     <INT> "[" "]" {return new IntArrayType();}
-    | <INT> {return new IntegerType();}
     | <BOOLEAN> {return new BooleanType();}
-    | id = ID() {return new IdentifierType(id.toString());} // ver se da certo
+    | <INT> {return new IntegerType();}
+    | id = ID() {return new IdentifierType(id.toString());}
 }
+
+
 
 Statement Statement() :
 {
@@ -304,16 +341,19 @@ Statement Statement() :
     | id = ID() "[" e = Expression() "]" "=" e2 = Expression() <SCOLON> { return new ArrayAssign(id, e, e2); }
 }
 
+// TODA A PARTE DE EXPRESSÕES E DE REMOÇÃO DE LEFT-RECURSION FOI REFEITA DO 0
+// FIZEMOS MENOS MÉTODOS, MENOS CÓDIGO, O ANTIGO TAMBÉM ESTAVA INCOMPLETO E PARECIA NÃO FUNCIONAR EM ALGUNS CASOS.
+
 Exp Expression() :
 {
     Exp e1;
 }
 {
-    e1 = Expr1() (LOOKAHEAD(2) e1 = Expr2(e1))* // ((((a+b)+c)+d)+e)
+    e1 = Expression_value() (LOOKAHEAD(2) e1 = Expression_final(e1))*
     { return e1; }
 }
 
-Exp Expr1() :
+Exp Expression_value() :
 {
     Exp e, e2;
     Token t;
@@ -321,36 +361,36 @@ Exp Expr1() :
 }
 {
     <THIS> { e = new This(); return e; }
+    | <LNOT> e2 = Expression() { e = new Not(e2); return e; }
     | <TRUE> { e = new True(); return e; }
     | <FALSE> { e = new False(); return e; }
     | t = <NUM> { e = new IntegerLiteral(Integer.parseInt(t.image)); return e; }
     | id = ID() { e = new IdentifierExp(id.toString()); return e; }
-    | "!" e2 = Expression() { e = new Not(e2); return e; }
     | "(" e2 = Expression() ")" { e = e2; return e; }
-    | LOOKAHEAD(2) // lookahead aumentado em 1
-      <NEW> <INT> "[" e2 = Expression() "]" { e = new NewArray(e2); return e; }
     | <NEW> id = ID() "(" ")" { e = new NewObject(id); return e; }
+    | LOOKAHEAD(2)
+          <NEW> <INT> "[" e2 = Expression() "]" { e = new NewArray(e2); return e; }
 }
 
-Exp Expr2(Exp left_exp) :
+Exp Expression_final(Exp left_exp) :
 {
     Exp right_exp; Exp final_exp;
     Identifier id;
     ExpList el = new ExpList();
 }
 {
-    "&&" right_exp = Expression() { return new And(left_exp, right_exp); }
-    | "<" right_exp = Expression() { return new LessThan(left_exp, right_exp); }
-    | "+" right_exp = Expression() { return new Plus(left_exp, right_exp); }
-    | "-" right_exp = Expression() { return new Minus(left_exp, right_exp); }
-    | "*" right_exp = Expression() { return new Times(left_exp, right_exp); }
+    <LAND> right_exp = Expression() { return new And(left_exp, right_exp); }
+    | <PLUS> right_exp = Expression() { return new Plus(left_exp, right_exp); }
+    | <SMALLER> right_exp = Expression() { return new LessThan(left_exp, right_exp); }
+    | <MINUS> right_exp = Expression() { return new Minus(left_exp, right_exp); }
+    | <MULT> right_exp = Expression() { return new Times(left_exp, right_exp); }
     | "[" right_exp = Expression() "]" { return new ArrayLookup(left_exp, right_exp); }
-    | LOOKAHEAD(2) // lookahead aumentado em 1
-      "." <LENGTH> { return new ArrayLength(left_exp); }
     | "." id = ID() "(" ( right_exp = Expression() { el.addElement(right_exp);}
         ( "," right_exp = Expression() { el.addElement(right_exp);} )* )? ")" { return new Call(left_exp, id, el); }
+    | LOOKAHEAD(2)
+          "." <LENGTH> { return new ArrayLength(left_exp); }
 }
 
-// FEITO
+// FEITO, nenhuma mudança
 Identifier ID() : {Token t;}
 { t = <ID> {return new Identifier(t.image);}}

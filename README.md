@@ -16,10 +16,8 @@ cd src
 
 javacc ../Parser.jj
 
-cd ..
+javac -d ../classes ./Parser.java
 
-javac -d classes src/*.java
-
-cd classes
+cd ../classes
 
 java Parser ../test/factorial.txt

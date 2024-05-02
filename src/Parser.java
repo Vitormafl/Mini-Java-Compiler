@@ -122,12 +122,19 @@ public class Parser implements ParserConstants {
         return stringBuilder.toString();
     }
 
-// FEITO
+// Expressions Declaration - Syntax Parser
+
+// The Program Method is the where you denote the outer structure of the mini java code
+// Basically the program has two parts: The Main Class and Other Classes
+// The MainClass() obsviously capture the tokens of the class with the function static main
+// and all other classes in the program are captured in OthersClasses()
+
+// NENHUMA MUDANÇA
   static final public Program Program() throws ParseException {
-    MainClass mc;
-    ClassDecl cd;
-    ClassDeclList cl = new ClassDeclList();
-    mc = MainClass();
+    MainClass main;
+    ClassDecl decl;
+    ClassDeclList classlist = new ClassDeclList();
+    main = MainClass();
     label_1:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -138,20 +145,21 @@ public class Parser implements ParserConstants {
         jj_la1[0] = jj_gen;
         break label_1;
       }
-      cd = ClassDeclaration();
-                              cl.addElement(cd);
+      decl = ClassDeclaration();
+                                classlist.addElement(decl);
     }
     jj_consume_token(0);
-     {if (true) return new Program(mc, cl);}
+     {if (true) return new Program(main, classlist);}
     throw new Error("Missing return statement in function");
   }
 
-// FEITO
+// REFATORADO, mudei os BRACE e BRACKETS para os símbolos para manter mais legível,
+// havia erro no mainclass antigo abria e fechava parenteses de uma vez
   static final public MainClass MainClass() throws ParseException {
-    Identifier ci, ma;
-    Statement s;
+    Identifier mcname, argname;
+    Statement code;
     jj_consume_token(CLASS);
-    ci = ID();
+    mcname = ID();
     jj_consume_token(LBRACE);
     jj_consume_token(PUBLIC);
     jj_consume_token(STATIC);
@@ -161,27 +169,27 @@ public class Parser implements ParserConstants {
     jj_consume_token(STRING);
     jj_consume_token(LBRACKET);
     jj_consume_token(RBRACKET);
-    ma = ID();
+    argname = ID();
     jj_consume_token(RPAR);
     jj_consume_token(LBRACE);
-    s = Statement();
+    code = Statement();
     jj_consume_token(RBRACE);
     jj_consume_token(RBRACE);
-     {if (true) return new MainClass(ci, ma, s);}
+     {if (true) return new MainClass(mcname, argname, code);}
     throw new Error("Missing return statement in function");
   }
 
-// FEITO
+// REFATORADO, extends mudado para ficar menos código
   static final public ClassDecl ClassDeclaration() throws ParseException {
-    Identifier id1, id2 = null;
-    VarDecl vd; VarDeclList vl = new VarDeclList();
-    MethodDecl md; MethodDeclList ml = new MethodDeclList();
+    Identifier classname, superclass = null;
+    VarDecl vd; VarDeclList varlist = new VarDeclList();
+    MethodDecl md; MethodDeclList methodlist = new MethodDeclList();
     jj_consume_token(CLASS);
-    id1 = ID();
+    classname = ID();
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case EXTENDS:
       jj_consume_token(EXTENDS);
-      id2 = ID();
+      superclass = ID();
       break;
     default:
       jj_la1[1] = jj_gen;
@@ -201,7 +209,7 @@ public class Parser implements ParserConstants {
         break label_2;
       }
       vd = VarDeclaration();
-                                vl.addElement(vd);
+                                varlist.addElement(vd);
     }
     label_3:
     while (true) {
@@ -214,10 +222,11 @@ public class Parser implements ParserConstants {
         break label_3;
       }
       md = MethodDeclaration();
-                                                                                 ml.addElement(md);
+                                                                                      methodlist.addElement(md);
     }
     jj_consume_token(RBRACE);
-     {if (true) return (id2 == null) ? new ClassDeclSimple(id1, vl, ml) : new ClassDeclExtends(id1, id2, vl, ml);}
+     if (superclass == null) {if (true) return new ClassDeclSimple(classname, varlist, methodlist);}
+    else {if (true) return new ClassDeclExtends(classname, superclass, varlist, methodlist);}
     throw new Error("Missing return statement in function");
   }
 
@@ -640,47 +649,6 @@ public class Parser implements ParserConstants {
     finally { jj_save(5, xla); }
   }
 
-  static private boolean jj_3R_26() {
-    if (jj_scan_token(THIS)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_25() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_26()) {
-    jj_scanpos = xsp;
-    if (jj_3R_27()) {
-    jj_scanpos = xsp;
-    if (jj_3R_28()) {
-    jj_scanpos = xsp;
-    if (jj_3R_29()) {
-    jj_scanpos = xsp;
-    if (jj_3R_30()) {
-    jj_scanpos = xsp;
-    if (jj_3R_31()) {
-    jj_scanpos = xsp;
-    if (jj_3R_32()) {
-    jj_scanpos = xsp;
-    if (jj_3_5()) {
-    jj_scanpos = xsp;
-    if (jj_3R_33()) return true;
-    }
-    }
-    }
-    }
-    }
-    }
-    }
-    }
-    return false;
-  }
-
-  static private boolean jj_3_1() {
-    if (jj_3R_10()) return true;
-    return false;
-  }
-
   static private boolean jj_3R_24() {
     if (jj_3R_25()) return true;
     return false;
@@ -860,6 +828,47 @@ public class Parser implements ParserConstants {
 
   static private boolean jj_3_4() {
     if (jj_3R_12()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_26() {
+    if (jj_scan_token(THIS)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_25() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_26()) {
+    jj_scanpos = xsp;
+    if (jj_3R_27()) {
+    jj_scanpos = xsp;
+    if (jj_3R_28()) {
+    jj_scanpos = xsp;
+    if (jj_3R_29()) {
+    jj_scanpos = xsp;
+    if (jj_3R_30()) {
+    jj_scanpos = xsp;
+    if (jj_3R_31()) {
+    jj_scanpos = xsp;
+    if (jj_3R_32()) {
+    jj_scanpos = xsp;
+    if (jj_3_5()) {
+    jj_scanpos = xsp;
+    if (jj_3R_33()) return true;
+    }
+    }
+    }
+    }
+    }
+    }
+    }
+    }
+    return false;
+  }
+
+  static private boolean jj_3_1() {
+    if (jj_3R_10()) return true;
     return false;
   }
 
