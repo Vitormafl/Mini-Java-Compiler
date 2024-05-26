@@ -18,7 +18,7 @@ public class IRVisitor implements IRtree.Visitor {
 
     public ClassTable mainClass;
     public Hashtable<Symbol, ClassTable> classList;
-    public ArrayList <Frag> fragments;
+    public static ArrayList <Frag> fragments;
     Stack<Frame> frames;
     Frame currentFrame;
     MethodTable currentMethod;

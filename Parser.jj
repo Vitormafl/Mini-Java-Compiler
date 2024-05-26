@@ -2,11 +2,12 @@
 PARSER_BEGIN(Parser)
 import syntaxtree.*;
 import syntaxtree.Integer;import syntaxtree.visitor.*;
-import IRTree.*;
-import Canon.*;
-import Temp.*;
+import IRtree.*;
+import canon.*;
+import temp.*;
 import utils.*;
 import mips.*;
+import java.util.*;
 
 // Novos métodos de análise do código, análise sintática e léxica
 
@@ -45,6 +46,34 @@ public class Parser {
             IRVisitor visitorInter = new IRVisitor(type_check, frame);
             prog.accept(visitorInter);
 
+            ArrayList<Frag> frags = IRVisitor.fragments;
+            for (int i = 0; i < frags.size(); ++i) {
+                Frag atual = frags.get(i);
+
+                tree.Print h = new tree.Print(System.out, new CombineMap(atual.frame, new DefaultMap()));
+
+                System.out.println("\n\nFUNCAO: " + atual.name);
+
+                System.out.println("\nSem canonizar:\n");
+                h.prStm(atual.body);
+
+                System.out.println("\nCanonizado:\n");
+                tree.StmList statements = Canon.linearize(atual.body);
+                for (tree.StmList c = statements; c != null; c = c.tail) {
+                    h.prStm(c.head);
+                }
+
+                BasicBlocks b = new BasicBlocks(statements);
+                tree.StmList t = (new TraceSchedule(b)).stms;
+
+                List<assem.Instr> instrucoes = ((mips.MipsFrame) atual.frame).codegen(Conversor.StmListToArray(t));
+
+                System.out.println("\nInstrucoes\n");
+                System.out.println(instrucoes.size());
+                for (int j = 0; j < instrucoes.size(); ++j) {
+                    System.out.println(instrucoes.get(j).format(h.tmap));
+                }
+            }
             
         }
         catch(Exception e){
