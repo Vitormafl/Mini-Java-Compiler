@@ -67,15 +67,6 @@ public class IRVisitor implements IRtree.Visitor {
             prog.cl.elementAt(i).accept(this);
         }
 
-        tree.Print h = new tree.Print(System.out);
-
-        // DEBUG
-        Stm temp;
-        for (int i = 0; i < fragments.size(); i++) {
-            temp = fragments.get(i).body;
-            h.prStm(temp);
-        }
-
         return null;
     }
 
@@ -95,7 +86,7 @@ public class IRVisitor implements IRtree.Visitor {
         lista.add(body);
 
         currentFrame.procEntryExit1(lista);
-        fragments.add(new Frag(body,currentFrame));
+        fragments.add(new Frag(body,currentFrame, "main"));
         frames.pop();
 
         return null;
@@ -163,7 +154,7 @@ public class IRVisitor implements IRtree.Visitor {
         ArrayList<Stm> l = new ArrayList<Stm>();
         l.add(body);
         currentFrame.procEntryExit1(l);
-        fragments.add(new Frag(body,currentFrame));
+        fragments.add(new Frag(body,currentFrame, currentMethod.getNome()));
         currentMethod = null;
         frames.pop();
         

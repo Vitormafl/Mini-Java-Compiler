@@ -2,7 +2,10 @@
 import syntaxtree.*;
 import syntaxtree.Integer;
 import syntaxtree.visitor.*;
-import IRtree.IRVisitor;
+import IRTree.*;
+import Canon.*;
+import Temp.*;
+import utils.*;
 import mips.*;
 
 /** Token Manager. */
