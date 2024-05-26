@@ -837,9 +837,6 @@ else {if (true) return new SubClass(classname, superclass, varlist, methodlist);
   static private int jj_ntk;
   static private Token jj_scanpos, jj_lastpos;
   static private int jj_la;
-  /** Whether we are looking ahead. */
-  static private boolean jj_lookingAhead = false;
-  static private boolean jj_semLA;
   static private int jj_gen;
   static final private int[] jj_la1 = new int[17];
   static private int[] jj_la1_0;
@@ -1010,7 +1007,7 @@ else {if (true) return new SubClass(classname, superclass, varlist, methodlist);
 
 /** Get the specific Token. */
   static final public Token getToken(int index) {
-    Token t = jj_lookingAhead ? jj_scanpos : token;
+    Token t = token;
     for (int i = 0; i < index; i++) {
       if (t.next != null) t = t.next;
       else t = t.next = token_source.getNextToken();
@@ -1025,7 +1022,7 @@ else {if (true) return new SubClass(classname, superclass, varlist, methodlist);
       return (jj_ntk = jj_nt.kind);
   }
 
-  static private java.util.List jj_expentries = new java.util.ArrayList();
+  static private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
   static private int[] jj_expentry;
   static private int jj_kind = -1;
   static private int[] jj_lasttokens = new int[100];
@@ -1041,10 +1038,10 @@ else {if (true) return new SubClass(classname, superclass, varlist, methodlist);
         jj_expentry[i] = jj_lasttokens[i];
       }
       boolean exists = false;
-      for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+      for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
+        exists = true;
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
-          exists = true;
           for (int i = 0; i < jj_expentry.length; i++) {
             if (oldentry[i] != jj_expentry[i]) {
               exists = false;
@@ -1091,7 +1088,7 @@ else {if (true) return new SubClass(classname, superclass, varlist, methodlist);
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = (int[])jj_expentries.get(i);
+      exptokseq[i] = jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }

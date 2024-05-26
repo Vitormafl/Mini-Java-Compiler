@@ -2,7 +2,10 @@
 PARSER_BEGIN(Parser)
 import syntaxtree.*;
 import syntaxtree.Integer;import syntaxtree.visitor.*;
-import IRtree.IRVisitor;
+import IRTree.*;
+import Canon.*;
+import Temp.*;
+import utils.*;
 import mips.*;
 
 // Novos métodos de análise do código, análise sintática e léxica
@@ -41,6 +44,8 @@ public class Parser {
             MipsFrame frame = new MipsFrame();
             IRVisitor visitorInter = new IRVisitor(type_check, frame);
             prog.accept(visitorInter);
+
+            
         }
         catch(Exception e){
             System.out.println("Unsuccessful Reading. Showing Error Message:");

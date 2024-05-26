@@ -2,8 +2,13 @@ package utils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import assem.Instr;
+import assem.InstrList;
 import temp.TempList;
 import tree.ExpList;
+import tree.Stm;
+import tree.StmList;
 
 public class Conversor {
 
@@ -68,6 +73,30 @@ public class Conversor {
         }
 
         return tempList;
+    }
+
+    public static List<Stm> StmListToArray (StmList ht) {
+        ArrayList<Stm> r = new ArrayList<Stm>();
+
+        StmList h = ht;
+        while (h != null) {
+            r.add(h.head);
+            h = h.tail;
+        }
+
+        return r;
+    }
+
+    public static List<Instr> InstrListToArray(InstrList ht) {
+        ArrayList<Instr> r = new ArrayList<Instr>();
+
+        InstrList h = ht;
+        while (h != null) {
+            r.add(h.head);
+            h = h.tail;
+        }
+
+        return r;
     }
 
 }
